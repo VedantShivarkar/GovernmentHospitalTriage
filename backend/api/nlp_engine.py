@@ -20,23 +20,44 @@ def analyze_symptoms(symptom_text: str) -> dict:
     prompt = f"""
     You are an expert clinical triage AI for a government hospital.
     Analyze the following patient message and output STRICTLY valid JSON with no markdown formatting or extra text.
-    
-    Assign a priority score from 1 to 5:
-    1 = Critical/Life-threatening (e.g., heart attack, severe bleeding)
-    2 = Urgent (e.g., severe pain, fractures, breathing difficulty)
-    3 = Moderate (e.g., high fever, persistent vomiting)
-    4 = Minor (e.g., mild sprains, cold, minor cuts)
-    5 = Non-urgent/Routine (e.g., general checkup, mild rash, refill)
-    
-    Also, identify the most likely hospital department (e.g., Cardiology, Orthopedics, General Medicine, ER).
-    
+
+    Assign a priority score from 1 to 5 based on the **severity and urgency**:
+
+    1 = CRITICAL / LIFE-THREATENING – Immediate ambulance required. Examples:
+        - Unconsciousness, not breathing
+        - Severe bleeding (profuse, spurting, uncontrolled)
+        - Heart attack symptoms (chest pain radiating to arm/jaw, shortness of breath, sweating)
+        - Major trauma (car accident, fall from height, deep wounds, broken bones with heavy bleeding)
+        - Stroke symptoms (facial drooping, slurred speech, one-sided weakness)
+        - Severe allergic reaction (difficulty breathing, swelling of throat)
+
+    2 = URGENT – Needs medical attention quickly but not immediately life‑threatening. Examples:
+        - Moderate bleeding (controlled with pressure)
+        - Suspected fracture without major bleeding
+        - Severe pain but stable vital signs
+        - High fever with confusion (in adults)
+        - Difficulty breathing but can speak in sentences
+
+    3 = MODERATE – Non‑urgent but should be seen soon. Examples:
+        - High fever without confusion, persistent vomiting
+        - Moderate pain (e.g., kidney stone, severe headache but no stroke symptoms)
+        - Deep laceration that is not actively bleeding heavily
+
+    4 = MINOR – Can wait, not emergent. Examples:
+        - Mild sprains, small cuts, cold/flu symptoms
+        - Minor burns, rashes, earache
+
+    5 = NON‑URGENT / ROUTINE – Routine checkup, prescription refill, mild rash.
+
+    Also identify the most likely hospital department (e.g., Cardiology, Orthopedics, General Medicine, ER, Trauma).
+
     Patient Message: "{symptom_text}"
-    
+
     Expected JSON Format exactly:
     {{
         "priority": <int>,
         "department": "<string>",
-        "clinical_summary": "<string max 10 words>"
+        "clinical_summary": "<string max 10 words in English>"
     }}
     """
 
@@ -80,19 +101,40 @@ def analyze_audio_symptoms(audio_bytes: bytes, mime_type: str) -> dict:
     prompt = """
     You are an expert clinical triage AI for a government hospital in Maharashtra.
     Listen to the attached patient voice note. It may be in Marathi, Hindi, or English.
-    
+
     1. Translate and understand the symptoms.
     2. Output STRICTLY valid JSON with no markdown formatting or extra text.
-    
-    Assign a priority score from 1 to 5:
-    1 = Critical/Life-threatening (e.g., heart attack, severe bleeding)
-    2 = Urgent (e.g., severe pain, fractures, breathing difficulty)
-    3 = Moderate (e.g., high fever, persistent vomiting)
-    4 = Minor (e.g., mild sprains, cold, minor cuts)
-    5 = Non-urgent/Routine (e.g., general checkup, mild rash, refill)
-    
-    Identify the most likely hospital department (e.g., Cardiology, Orthopedics, General Medicine, ER).
-    
+
+    Assign a priority score from 1 to 5 based on the **severity and urgency**:
+
+    1 = CRITICAL / LIFE-THREATENING – Immediate ambulance required. Examples:
+        - Unconsciousness, not breathing
+        - Severe bleeding (profuse, spurting, uncontrolled)
+        - Heart attack symptoms (chest pain radiating to arm/jaw, shortness of breath, sweating)
+        - Major trauma (car accident, fall from height, deep wounds, broken bones with heavy bleeding)
+        - Stroke symptoms (facial drooping, slurred speech, one-sided weakness)
+        - Severe allergic reaction (difficulty breathing, swelling of throat)
+
+    2 = URGENT – Needs medical attention quickly but not immediately life‑threatening. Examples:
+        - Moderate bleeding (controlled with pressure)
+        - Suspected fracture without major bleeding
+        - Severe pain but stable vital signs
+        - High fever with confusion (in adults)
+        - Difficulty breathing but can speak in sentences
+
+    3 = MODERATE – Non‑urgent but should be seen soon. Examples:
+        - High fever without confusion, persistent vomiting
+        - Moderate pain (e.g., kidney stone, severe headache but no stroke symptoms)
+        - Deep laceration that is not actively bleeding heavily
+
+    4 = MINOR – Can wait, not emergent. Examples:
+        - Mild sprains, small cuts, cold/flu symptoms
+        - Minor burns, rashes, earache
+
+    5 = NON‑URGENT / ROUTINE – Routine checkup, prescription refill, mild rash.
+
+    Identify the most likely hospital department (e.g., Cardiology, Orthopedics, General Medicine, ER, Trauma).
+
     Expected JSON Format exactly:
     {
         "priority": <int>,
