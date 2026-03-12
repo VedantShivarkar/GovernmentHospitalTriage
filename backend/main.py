@@ -2,7 +2,8 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from ml_core.predict import get_predictions
 from api.nlp_engine import analyze_symptoms
-from api.db_client import push_patient_to_queue  # NEW IMPORT
+from api.db_client import push_patient_to_queue
+from api.email_service import send_triage_email # NEW IMPORT
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -17,6 +18,7 @@ class PatientContext(BaseModel):
 
 class PatientSymptomRequest(BaseModel):
     patient_id: str
+    patient_email: str # NEW FIELD
     raw_symptoms: str
     current_department_queue: int = 10 
     hour_of_day: int = 14 
@@ -24,17 +26,16 @@ class PatientSymptomRequest(BaseModel):
 
 @app.get("/")
 def health_check():
-    return {"status": "Enterprise Core Online", "version": "1.2.0"}
+    return {"status": "Enterprise Core Online", "version": "1.3.0"}
 
 @app.post("/api/v1/ml/predict-wait-time")
 def predict_wait(context: PatientContext):
-    result = get_predictions(
+    return get_predictions(
         priority=context.priority,
         queue_length=context.queue_length,
         hour_of_day=context.hour_of_day,
         avg_consult_time=context.avg_consult_time
     )
-    return result
 
 @app.post("/api/v1/triage/process-symptoms")
 def process_patient_symptoms(request: PatientSymptomRequest):
@@ -55,16 +56,23 @@ def process_patient_symptoms(request: PatientSymptomRequest):
     # 3. Assemble Payload
     final_payload = {
         "patient_id": request.patient_id,
-        "raw_symptoms": request.raw_symptoms, # Keeping this for hospital admin context
+        "patient_email": request.patient_email,
+        "raw_symptoms": request.raw_symptoms,
         "triage_results": triage_data,
         "queue_analytics": ml_predictions,
         "action_required": "dispatch_ambulance" if ml_predictions.get("requires_immediate_attention") else "schedule_slot"
     }
     
-    # 4. Push to Firebase Real-time Queue (NEW STEP)
-    db_success = push_patient_to_queue(final_payload)
+    # 4. Push to Firebase
+    push_patient_to_queue(final_payload)
     
-    if not db_success:
-        print(f"Warning: Failed to sync patient {request.patient_id} to database.")
+    # 5. Send Email Notification (NEW STEP)
+    send_triage_email(
+        patient_email=request.patient_email,
+        priority=triage_data["priority"],
+        department=triage_data["department"],
+        wait_time=ml_predictions["estimated_wait_time_minutes"],
+        summary=triage_data["clinical_summary"]
+    )
     
     return final_payload
